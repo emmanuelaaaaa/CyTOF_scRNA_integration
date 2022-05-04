@@ -51,7 +51,7 @@ cytof_obj <- RunTSNE(cytof_obj, reduction = "pca", features=Bmarkers, dims = NUL
 saveRDS(cytof_obj, file=paste0(outdir,"/COMBAT_CyTOFobj_Bcells.RDS"))
 
 ### RNA
-## subsetting the original matrix, creating the Seurat object, batch correcting and processing
+## subsetting the original matrix for B cells only, creating the Seurat object, batch correcting and processing
 
 cell_table_subs_smaller <- as.data.frame(rna_md %>% filter(major_cell_type=="B") )
 cell_table_subs_smaller <- as.data.frame(filter(cell_table_subs_smaller, COMBAT_ID_Time %in% sce_coldata_subs_smaller$COMBAT_ID_Time))
@@ -99,7 +99,7 @@ rna.integrated <- RunUMAP(rna.integrated, dims = 1:15, reduction = "rna.pca",ass
 saveRDS(rna.integrated, file=paste0(outdir,"/COMBAT_RNAobj_Bcells.RDS"))
 
 ### ADT
-## subsetting Seurat object and processing
+## subsetting Seurat object for B cells only and processing
 
 adt_obj <- adt_obj[,colnames(rna.integrated)]
 adt_obj <- ScaleData(adt_obj, features = row.names(adt_obj))
