@@ -2,7 +2,8 @@ args <- commandArgs(trailingOnly = FALSE)
 rna_file <- args[1]
 adt_file <- args[2]
 cytof_file <- args[3]
-outfile <- args[4]
+k_param <- args[4]
+outfile <- args[5]
 
 # load necessary libraries
 suppressPackageStartupMessages({
@@ -40,13 +41,13 @@ transfer.anchors_cyt <- FindTransferAnchors(reference = cytof, query = rna,
 imputation_cyt <- TransferData(anchorset = transfer.anchors_cyt, 
                                  refdata = GetAssayData(cytof, assay = "Cytof", slot = "data")[common_features, ],
                                  weight.reduction = rna[["pca"]],
-                                 dims=1:15, k.weight=30)
+                                 dims=1:15, k.weight=k_param)
 rna[["Cytof"]] <- imputation_cyt
 
 celltype.predictions_cyt <- TransferData(anchorset = transfer.anchors_cyt, 
                                                refdata = cytof@meta.data[,"fine_populations"],
                                                weight.reduction =rna[["pca"]],
-                                               dims=1:15, k.weight=30)
+                                               dims=1:15, k.weight=k_param)
 rna <- AddMetaData(rna, metadata = celltype.predictions_cyt[,c("predicted.id","prediction.score.max")])
 
 saveRDS(rna, file = outfile)
