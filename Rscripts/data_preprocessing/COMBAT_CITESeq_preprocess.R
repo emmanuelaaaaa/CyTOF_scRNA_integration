@@ -5,37 +5,38 @@ library(dplyr)
 library(SingleCellExperiment)
 
 ### load data
-sce <- readRDS(cytof_file)
+sce <- readRDS("cytof_sce.RDS")
 adt <- readRDS("adt_mtx.RDS")
 rna_mtx <- readRDS("rna_mtx.RDS")
+cell_table <- readRDS("citeseq_md.RDS")
 gene_protein_table <- read.table("gene_protein_table.txt", sep="\t", header=T)
 
 ### renaming the genes into their protein counterparts (from the gene-ADT-CyTOF table)
+gene_protein_table <- filter(gene_protein_table, Gene %in% row.names(rna_mtx))
+gene_protein_table$CyTOF <- gsub("-",replacement="_",gene_protein_table$CyTOF)
 m <- match(gene_protein_table$Gene,row.names(rna_mtx))
-if (all(row.names(rna_mtx)[m]==DNAID_table2$Gene)) row.names(rna_mtx)[m] <- gene_protein_table$Protein_cytof
-
-### renaming extra genes that were not included in table into their protein counterpart
-row.names(rna_mtx)[row.names(rna_mtx)=="SIGLEC8"] <- "Siglec_8"
-row.names(rna_mtx)[row.names(rna_mtx)=="GZMB"] <- "GZB"
-row.names(rna_mtx)[row.names(rna_mtx)=="SELPLG"] <- "CLA"
-row.names(rna_mtx)[row.names(rna_mtx)=="BCL2"] <- "BCL_2"
-row.names(rna_mtx)[row.names(rna_mtx)=="MKI67"] <- "Ki-67"
+row.names(rna_mtx)[m] <- gene_protein_table$CyTOF
 
 ### Filtering CITE-Seq datasets
 
-# filtering samples with low number cells
-cell_table_subs <- filter(cell_table, !(scRNASeq_sample_ID %in% c("G05092-Ja005E-PBCa","S00030-Ja003E-PBCa"))) # first doesn't appear in the Cytof anyway and it has only 23 cells, second it does and its COVID-critical but has 13 cells only
+# filtering samples with low numbers of cells
+cell_table_subs <- filter(cell_table, !(scRNASeq_sample_ID %in% c("G05092-Ja005E-PBCa","S00030-Ja003E-PBCa"))) 
 cell_table_subs <- filter(cell_table_subs, COMBAT_ID_Time %in% colData(sce)$COMBAT_ID_Time) 
 
 # filtering low quality cells and cells with uncertain annotation
 cell_table_subs <- filter(cell_table_subs, 
-                        nfeatures_ADT>quantile(nfeatures_ADT, 0.001) & total_UMI_ADT>quantile(total_UMI_ADT, 0.001) & ngenes>quantile(ngenes, 0.001) & total_UMI>quantile(total_UMI, 0.001)) %>%
+                        nfeatures_ADT>quantile(nfeatures_ADT, 0.001) & 
+			total_UMI_ADT>quantile(total_UMI_ADT, 0.001) & 
+			ngenes>quantile(ngenes, 0.001) & 
+			total_UMI>quantile(total_UMI, 0.001)) %>%
                     filter(trusted_phenotype=="yes") %>%
                     filter(!grepl("|",major_cell_type, fixed=T) & major_cell_type!="NA") 
 
 # exctracting 2000 cells per sample from the metadata table
-cell_table_subs_smaller <- as.data.frame(cell_table_subs %>% filter(!major_cell_type %in% c("RET","Mast")) %>% 
-	group_by(scRNASeq_sample_ID) %>% slice_sample(n=2000, replace=F))
+cell_table_subs_smaller <- as.data.frame(cell_table_subs %>% 
+				filter(!major_cell_type %in% c("RET","Mast")) %>% 
+				group_by(scRNASeq_sample_ID) %>% 
+				slice_sample(n=2000, replace=F))
 cell_table_subs_smaller <- as.data.frame(filter(cell_table_subs_smaller, COMBAT_ID_Time %in% as_tibble(colData(sce))$COMBAT_ID_Time))
 row.names(cell_table_subs_smaller) <- cell_table_subs_smaller$barcode_id
 
@@ -51,7 +52,7 @@ adt_obj <- RunTSNE(object = adt_obj, dims.use = 1:30, do.fast = TRUE)
 adt_obj <- RunUMAP(adt_obj, dims = 1:30)
 
 adt.subsampled <- subset(adt_obj, cell=rna_subs_smaller$barcode_id)
-saveRDS(adt_obj, file="COMBAT_ADTobj.RDS")
+saveRDS(adt_obj, file="COMBAT_ADTobj_182000.RDS")
 
 ### RNA
 
@@ -92,5 +93,5 @@ rna.integrated <- ScaleData(rna.integrated, features = row.names(rna.integrated)
 rna.integrated <- RunPCA(rna.integrated, features = row.names(rna.integrated),reduction.name = "rna.pca" )
 rna.integrated <- RunUMAP(rna.integrated, dims = 1:30, reduction = "rna.pca",assay = "RNA", reduction.name = "rna.umap", reduction.key = "rnaUMAP_")
 
-saveRDS(rna.integrated, file="RNAobjintegrated_mixed182000.RDS")
+saveRDS(rna.integrated, file="COMBAT_RNAobjintegrated_182000.RDS")
 
