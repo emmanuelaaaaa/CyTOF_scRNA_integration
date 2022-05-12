@@ -7,6 +7,16 @@ library(future)
 
 # load 10x 3' GEX Data and metadata from GEO GSE164378 for PBMC REF
 rna_mtx <- Read10X(data.dir = "./PBMC_RNA_3P/")
+gene_protein_table <- read.table(file="./PBMC_REF_ADT_CyTOF_protein_gene_table.txt", header=T)
+
+### renaming the genes into their protein counterparts (from the gene-ADT-CyTOF protein table)
+gene_protein_table <- filter(gene_protein_table, gene_name %in% row.names(rna_mtx))
+#gene_protein_table$protein_name <- gsub("-",replacement="_",gene_protein_table$protein_name)
+m <- match(gene_protein_table$gene_name,row.names(rna_mtx))
+row.names(rna_mtx)[m] <- gene_protein_table$protein_name
+
+
+# Read in PBMC metadata
 pbmc_metadata <- read.table(file="./GSE164378_sc.meta.data_3P.csv", sep = ",", row.names = 1, header=T)
 
 
@@ -19,6 +29,13 @@ rna_seurat <- AddMetaData(rna_seurat, metadata = list(pbmc_metadata$time, pbmc_m
                               col.name = c("time","celltype.l1","celltype.l2","celltype.l3","Phase","Batch"))
 rna_seurat$donor_time <- paste(rna_seurat$donor,"_",rna_seurat$time,sep = "")
 rm(rna_mtx, pbmc_metadata)
+
+# recode celltype.l2 annotation column and create a "celltypes column" to match celltypes in the CyTOF data
+rna$celltypes <- as.factor(rna$celltype.l2)
+rna$celltypes <- fct_collapse( rna$celltypes ,B = c("B intermediate" ,"B memory" ,"B naive"), CD4 = c("CD4 CTL","CD4 Naive","CD4 Proliferating","CD4 TCM","CD4 TEM","Treg") , 
+                               CD8 = c("CD8 Naive" ,"CD8 Proliferating","CD8 TCM","CD8 TEM"), NK = c( "NK Proliferating" ,"NK_CD56bright" , "NK"), DC = c("ASDC","cDC1" ,"cDC2" ,"pDC"), 
+                               PB = c("Plasmablast"), DN = c("dnT"), CD16_Mono = c("CD16 Mono"), CD14_Mono = c("CD14 Mono"), GDT = c("gdT"))
+
 
 #Subset seurat object to remove cells annotated as Doublet in the original publication
 Idents(rna_seurat) <- "celltype.l2"
@@ -61,5 +78,7 @@ rna.integrated <- ScaleData(rna.integrated, verbose = FALSE)
 plan("sequential", gc=T)
 rna.integrated <- RunPCA(rna.integrated, verbose = FALSE)
 rna.integrated<- RunUMAP(rna.integrated, dims = 1:50)
+
+
 
 saveRDS(rna.integrated, file="pbmc_multimodal_all_rna_workflow_rpca.rds")

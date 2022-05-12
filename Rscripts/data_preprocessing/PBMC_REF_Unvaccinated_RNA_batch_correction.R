@@ -7,7 +7,20 @@ library(future)
 
 # load 10x 3' GEX Data and metadata from GEO GSE164378 for PBMC REF
 rna_mtx <- Read10X(data.dir = "./PBMC_RNA_3P/")
+gene_protein_table <- read.table(file="./PBMC_REF_ADT_CyTOF_protein_gene_table.txt", header=T)
+
+### renaming the genes into their protein counterparts (from the gene-ADT-CyTOF protein table)
+gene_protein_table <- filter(gene_protein_table, gene_name %in% row.names(rna_mtx))
+#gene_protein_table$protein_name <- gsub("-",replacement="_",gene_protein_table$protein_name)
+m <- match(gene_protein_table$gene_name,row.names(rna_mtx))
+row.names(rna_mtx)[m] <- gene_protein_table$protein_name
+
+
+# Read in PBMC metadata
 pbmc_metadata <- read.table(file="./GSE164378_sc.meta.data_3P.csv", sep = ",", row.names = 1, header=T)
+
+
+
 
 
 # Create Seurat object and Add metadata
