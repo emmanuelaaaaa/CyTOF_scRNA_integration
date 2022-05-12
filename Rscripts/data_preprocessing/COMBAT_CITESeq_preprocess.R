@@ -9,7 +9,7 @@ sce <- readRDS("cytof_sce.RDS")
 adt <- readRDS("adt_mtx.RDS")
 rna_mtx <- readRDS("rna_mtx.RDS")
 cell_table <- readRDS("citeseq_md.RDS")
-gene_protein_table <- read.table("gene_protein_table.txt", sep="\t", header=T)
+gene_protein_table <- read.table("../input_tables/gene_protein_table_COMBAT.txt", sep="\t", header=T)
 
 ### renaming the genes into their protein counterparts (from the gene-ADT-CyTOF table)
 gene_protein_table <- filter(gene_protein_table, Gene %in% row.names(rna_mtx))
