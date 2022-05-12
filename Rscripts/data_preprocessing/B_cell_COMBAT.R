@@ -1,4 +1,4 @@
-args <- commandArgs(trailingOnly = FALSE)
+args <- commandArgs(trailingOnly = TRUE)
 rna_file <- args[1]
 rna_md_file <- args[2]
 adt_file <- args[3]

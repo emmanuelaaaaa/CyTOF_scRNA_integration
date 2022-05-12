@@ -1,8 +1,9 @@
-args <- commandArgs(trailingOnly = FALSE)
+args <- commandArgs(trailingOnly = TRUE)
 rna_file <- args[1]
 adt_file <- args[2]
 cytof_file <- args[3]
-outfile <- args[4]
+annotation_to_project <- args[4]
+outfile <- args[5]
 
 # load necessary libraries
 suppressPackageStartupMessages({
@@ -20,6 +21,7 @@ adt <- readRDS(adt_file)
 # set B cell markers and common features
 DefaultAssay(rna) <- "RNA"
 common_features <- intersect(row.names(rna), row.names(cytof))
+common_features_adt <- intersect(row.names(cytof), row.names(adt))
 
 # filtering cells without expression in common genes
 indx <- colSums(rna[common_features,])>5
@@ -36,13 +38,13 @@ transfer.anchors_cyt <- FindTransferAnchors(reference = cytof, query = rna,
 
 # transfer labels and protein intensities         
 imputation_cyt <- TransferData(anchorset = transfer.anchors_cyt, 
-                                 refdata = GetAssayData(cytof, assay = "Cytof", slot = "data")[common_features, ],
+                                 refdata = GetAssayData(cytof, assay = "Cytof", slot = "data")[union(common_features, common_features_adt), ],
                                  weight.reduction = rna[["pca"]],
                                  dims=1:15)
 rna[["Cytof"]] <- imputation_cyt
 
 celltype.predictions_cyt <- TransferData(anchorset = transfer.anchors_cyt, 
-                                               refdata = cytof@meta.data[,"fine_populations"],
+                                               refdata = cytof@meta.data[,annotation_to_project],
                                                weight.reduction =rna[["pca"]],
                                                dims=1:15)
 rna <- AddMetaData(rna, metadata = celltype.predictions_cyt[,c("predicted.id","prediction.score.max")])
