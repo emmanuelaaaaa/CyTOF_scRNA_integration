@@ -3,7 +3,8 @@ rna_file <- args[1]
 adt_file <- args[2]
 cytof_file <- args[3]
 annotation_to_project <- args[4]
-outfile <- args[5]
+cca.dims <- as.integer(args[5])
+outfile <- args[6]
 
 # load necessary libraries
 suppressPackageStartupMessages({
@@ -34,19 +35,19 @@ transfer.anchors_cyt <- FindTransferAnchors(reference = cytof, query = rna,
                                                   reference.assay = "Cytof", 
                                                   query.assay = "RNA", 
                                                   reduction = "cca",
-                                                  dims=1:15)
+                                                  dims=1:cca.dims)
 
 # transfer labels and protein intensities         
 imputation_cyt <- TransferData(anchorset = transfer.anchors_cyt, 
                                  refdata = GetAssayData(cytof, assay = "Cytof", slot = "data")[union(common_features, common_features_adt), ],
                                  weight.reduction = rna[["pca"]],
-                                 dims=1:15)
+                                 dims=1:cca.dims)
 rna[["Cytof"]] <- imputation_cyt
 
 celltype.predictions_cyt <- TransferData(anchorset = transfer.anchors_cyt, 
                                                refdata = cytof@meta.data[,annotation_to_project],
                                                weight.reduction =rna[["pca"]],
-                                               dims=1:15)
+                                               dims=1:cca.dims)
 rna <- AddMetaData(rna, metadata = celltype.predictions_cyt[,c("predicted.id","prediction.score.max")])
 
 saveRDS(rna, file = outfile)
