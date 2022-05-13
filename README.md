@@ -38,6 +38,5 @@ RColorBrewer_1.1-2
 ComplexHeatmap_2.10.0       
 circlize_0.4.14             
 CATALYST_1.18.1
-flipPlots_1.3.5
 htmlwidgets_1.5.4
 ```
