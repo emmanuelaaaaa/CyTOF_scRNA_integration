@@ -1,9 +1,8 @@
-args <- commandArgs(trailingOnly = FALSE)
+args <- commandArgs(trailingOnly = TRUE)
 rna_file <- args[1]
-adt_file <- args[2]
-cytof_file <- args[3]
-k_param <- args[4]
-outfile <- args[5]
+cytof_file <- args[2]
+k_param <- as.integer(args[3])
+outfile <- args[4]
 
 # load necessary libraries
 suppressPackageStartupMessages({
@@ -16,7 +15,6 @@ suppressPackageStartupMessages({
 # load initial objects
 rna <- readRDS(rna_file)
 cytof <- readRDS(cytof_file)
-adt <- readRDS(adt_file)
 
 # set B cell markers and common features
 Bplasmamarkers <- c("CD19","HLA-DR","CTLA4","CD28","Ki-67","CCR7","CD127","CD99","CD103","PD1","CD161","CD27",     
@@ -27,7 +25,6 @@ common_features <- intersect(row.names(rna),Bplasmamarkers)
 # filtering cells without expression in common genes
 indx <- colSums(rna[common_features,])>5
 rna <- rna[,indx]
-adt <- adt[,colnames(rna)]
 
 # find anchors
 transfer.anchors_cyt <- FindTransferAnchors(reference = cytof, query = rna, 
